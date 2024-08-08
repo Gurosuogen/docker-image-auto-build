@@ -62,4 +62,6 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
         # tags: peachz/ssb:${{ steps.get_latest_release.outputs.sub_store_version }}
