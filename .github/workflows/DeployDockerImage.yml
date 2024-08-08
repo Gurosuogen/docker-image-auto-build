@@ -54,9 +54,9 @@ jobs:
       with:
         images: peachz/ssb
         tags: |
-          type=raw,value=latest
           type=raw,value=${{ steps.get_latest_release.outputs.sub_store_version }}
-
+          type=raw,value=latest
+          
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
   
