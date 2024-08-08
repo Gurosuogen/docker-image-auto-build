@@ -1,6 +1,5 @@
 name: Download Latest Release Asset
 
-# 设定工作流程的触发条件，这里我们设置为每天运行一次
 on:
   schedule:
     - cron: '0 0 * * *'  # 每天凌晨运行一次
@@ -23,13 +22,19 @@ jobs:
             owner: 'sub-store-org',
             repo: 'Sub-Store'
           });
-          return latestRelease.data;
+          
+          const asset = latestRelease.data.assets.find(a => a.name === 'sub-store.bundle.js');
+          
+          if (!asset) {
+            throw new Error('sub-store.bundle.js not found in the latest release.');
+          }
+          
+          return { download_url: asset.browser_download_url };
 
     - name: Download the specific release asset
-      id: download_asset
       run: |
         mkdir -p config
-        curl -L ${{ steps.get_release.outputs.result.assets | fromJson | select("name == 'sub-store.bundle.js') | first.browser_download_url }} -o config/sub-store.bundle.js
+        curl -L ${{ steps.get_release.outputs.download_url }} -o config/sub-store.bundle.js
 
     - name: Commit and push downloaded asset
       run: |
