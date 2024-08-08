@@ -26,10 +26,9 @@ jobs:
         download_url="https://github.com/sub-store-org/Sub-Store/releases/download/${{ steps.get_latest_release.outputs.sub_store_version }}/sub-store.bundle.js"
         curl -L $download_url -o sub-store.bundle.js
 
-    - name: Build Docker image
+    - name: Build Dockerfile
       run: |
-        docker build -t sub-store:${{ steps.get_latest_release.outputs.sub_store_version }} .
-
+        cat << EOF > Dockerfile
         FROM node:16-alpine
         
         WORKDIR /app
@@ -41,6 +40,11 @@ jobs:
         EXPOSE 3000
         
         CMD cd config && node ../sub-store.bundle.js
+        EOF
+
+    - name: Build Docker Image
+      run: |
+        docker build -t sub-store:${{ steps.get_latest_release.outputs.sub_store_version }} .
 
     - name: Push to Docker Hub
       if: github.event_name == 'push'
