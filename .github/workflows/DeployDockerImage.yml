@@ -1,11 +1,10 @@
 name: Sub-Store Deployment
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+  schedule:
+    - cron: '0 0 * * *'  # 每天凌晨运行一次
+  workflow_dispatch:  # 允许手动触发
+  
 jobs:
 
   build:
