@@ -1,0 +1,40 @@
+name: Download Latest Release Asset
+
+# 设定工作流程的触发条件，这里我们设置为每天运行一次
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天凌晨运行一次
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  download_release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout this repository
+      uses: actions/checkout@v3
+
+    - name: Get the latest release info
+      id: get_release
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const latestRelease = await github.rest.repos.getLatestRelease({
+            owner: 'sub-store-org',
+            repo: 'Sub-Store'
+          });
+          return latestRelease.data;
+
+    - name: Download the specific release asset
+      id: download_asset
+      run: |
+        mkdir -p config
+        curl -L ${{ steps.get_release.outputs.result.assets | fromJson | select("name == 'sub-store.bundle.js') | first.browser_download_url }} -o config/sub-store.bundle.js
+
+    - name: Commit and push downloaded asset
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add config/sub-store.bundle.js
+        git commit -m "Download latest sub-store.bundle.js"
+        git push
