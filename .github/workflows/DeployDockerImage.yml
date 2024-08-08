@@ -48,6 +48,12 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: peachz/ssb
+        flavor: latest=auto
 
     - name: Build and push Docker image
       id: push
@@ -56,4 +62,4 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        tags: peachz/ssb:${{ steps.get_latest_release.outputs.sub_store_version }}
+        # tags: peachz/ssb:${{ steps.get_latest_release.outputs.sub_store_version }}
