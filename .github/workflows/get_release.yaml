@@ -1,45 +1,53 @@
-name: Download Latest Release Asset
+name: Sub-Store Deployment
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # 每天凌晨运行一次
-  workflow_dispatch:  # 允许手动触发
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-  download_release:
+
+  build:
     runs-on: ubuntu-latest
-
+    
     steps:
-    - name: Checkout this repository
-      uses: actions/checkout@v3
-
-    - name: Get the latest release info
-      id: get_release
-      uses: actions/github-script@v6
-      with:
-        script: |
-          const latestRelease = await github.rest.repos.getLatestRelease({
-            owner: 'sub-store-org',
-            repo: 'Sub-Store'
-          });
-          
-          const asset = latestRelease.data.assets.find(a => a.name === 'sub-store.bundle.js');
-          
-          if (!asset) {
-            throw new Error('sub-store.bundle.js not found in the latest release.');
-          }
-          
-          return { download_url: asset.browser_download_url };
-
-    - name: Download the specific release asset
+    - uses: actions/checkout@v3
+    
+    - name: Get latest Sub-Store release
+      id: get_latest_release
       run: |
-        mkdir -p config
-        curl -L ${{ steps.get_release.outputs.download_url }} -o config/sub-store.bundle.js
+        latest_release_url="https://api.github.com/repos/sub-store-org/Sub-Store/releases/latest"
+        latest_version=$(curl -s $latest_release_url | grep -o '"tag_name": "\([^"]*\)"' | sed 's/"tag_name": "\(.*\)"/\1/')
+        echo "Latest version: $latest_version"
+        echo "sub_store_version=$latest_version" >> $GITHUB_OUTPUT
 
-    - name: Commit and push downloaded asset
+    - name: Download Sub-Store bundle
       run: |
-        git config --global user.name 'github-actions[bot]'
-        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-        git add config/sub-store.bundle.js
-        git commit -m "Download latest sub-store.bundle.js"
-        git push
+        download_url="https://github.com/sub-store-org/Sub-Store/releases/download/${{ steps.get_latest_release.outputs.sub_store_version }}/sub-store.bundle.js"
+        curl -L $download_url -o sub-store.bundle.js
+
+    - name: Build Docker image
+      run: |
+        docker build -t sub-store:${{ steps.get_latest_release.outputs.sub_store_version }} .
+
+        FROM node:16-alpine
+        
+        WORKDIR /app
+        
+        COPY . .
+        
+        RUN mkdir config
+        
+        EXPOSE 3000
+        
+        CMD cd config && node ../sub-store.bundle.js
+
+    - name: Push to Docker Hub
+      if: github.event_name == 'push'
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+        docker push sub-store:${{ steps.get_latest_release.outputs.sub_store_version }}
