@@ -1,0 +1,55 @@
+name: 3x-ui Deployment
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # 每天周运行一次
+  workflow_dispatch:  # 允许手动触发
+  
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Get latest 3x-ui version
+      id: get_latest_version
+      run: |
+        api_url="https://api.github.com/repos/MHSanaei/3x-ui/releases/latest"
+        latest_version=$(curl -s $api_url | grep -o '"tag_name": "\([^"]*\)"' | sed 's/"tag_name": "\(.*\)"/\1/')
+        # echo "Latest version: $latest_version"
+        echo "xui-version=$latest_version" >> $GITHUB_OUTPUT
+
+    - name: Git Clone
+      run: |
+        git clone https://github.com/MHSanaei/3x-ui.git
+
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: peachz/3x-ui
+        tags: |
+          type=raw,value=${{ steps.get_latest_version.outputs.xui-version }}
+          type=raw,value=latest
+          
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+  
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      id: push
+      uses: docker/build-push-action@v6
+      with:
+        context: ./3x-ui
+        file: ./3x-ui/Dockerfile
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
