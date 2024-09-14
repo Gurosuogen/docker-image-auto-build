@@ -1,4 +1,4 @@
-name: warp-clash-api Deployment
+name: logseq-DB Deployment
 
 on:
   schedule:
