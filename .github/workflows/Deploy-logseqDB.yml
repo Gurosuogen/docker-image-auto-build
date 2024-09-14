@@ -1,4 +1,4 @@
-name: logseq-DB Deployment
+name: Logseq-DB Deployment
 
 on:
   schedule:
