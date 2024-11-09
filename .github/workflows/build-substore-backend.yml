@@ -1,4 +1,4 @@
-name: Sub-Store Deployment
+name: Build Sub-Store-Backend Image
 
 on:
   schedule:
