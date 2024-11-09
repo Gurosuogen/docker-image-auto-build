@@ -1,4 +1,4 @@
-name: warp-clash-api Deployment
+name: Build Grass-Bot Image
 
 on:
   schedule:
